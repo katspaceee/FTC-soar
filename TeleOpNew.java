@@ -41,9 +41,10 @@ public class TeleOpNew extends OpMode {
     //Sensors
     private BNO055IMU imu;
 
-    private double proportional = 0.6, robHead = 0.0, lastRx = 0.0;
-    private PID angularPID = new PID(0.7, 0.0, 0.0);
+    private double proportional = 0.7, robHead = 0.0, lastRx = 0.0;
+    private PID angularPID = new PID(0.36, 0.15, 0.05);
 
+//0-
     //Constants
     private double maxChassisRPM = 1200;
     private double wheelRad = 2.283465, robRad = 9.00459;
@@ -74,7 +75,7 @@ public class TeleOpNew extends OpMode {
         //Setting direction for motors
         TR.setDirection(DcMotorSimple.Direction.FORWARD);
         BR.setDirection(DcMotorSimple.Direction.FORWARD);
-        TL.setDirection(DcMotorSimple.Direction.FORWARD);
+        TL.setDirection(DcMotorSimple.Direction.REVERSE);
         BL.setDirection(DcMotorSimple.Direction.REVERSE);
         ARB1.setDirection(DcMotorSimple.Direction.REVERSE);
         ARB2.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -97,54 +98,36 @@ public class TeleOpNew extends OpMode {
 
     @Override
     public void loop(){
-        //Getting data from gamepad1 for movement
+        //Determines the difference in time between frames
         double currentTime = runTime.time();
         double delTime = currentTime - lastTime;
         lastTime = currentTime;
 
+        //Getting data from gamepad1 for movement
         double x = (gamepad1.left_stick_x * Math.abs(gamepad1.left_stick_x)) * 1.1;
         double y = (gamepad1.left_stick_y * Math.abs(gamepad1.left_stick_y));
         double rx = (gamepad1.right_stick_x * Math.abs(gamepad1.right_stick_x));
 
+        calculateTargetHead(rx);
+
+        //Calculates angle error of the robot between target head and actual head.
         double angleError = checkStrafeAndHead(x, y, robHead, delTime);
-
-        double delRot = rx - lastRx;
-        lastRx = rx;
-        robHead += calculateDelTargetHead(delRot);
-
-        telemetry.addData("delRot", delRot);
-        telemetry.addData("robHead", robHead);
-        telemetry.addData("angleError", angleError);
-        telemetry.addData("TargetHead", robHead);
-
-        //Field-centric strafing
-        //---------------------------------------------------------------------//
-        /*double head = -imu.getAngularOrientation().firstAngle;
-
-        //Apply rotation matrix upon vector [x, y] to get the subsequent x and y powers.
-        double rotX = x * Math.cos(head) - y * Math.sin(head);
-        double rotY = x * Math.sin(head) + y * Math.cos(head);
-
-        double scale = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-
-        double TRPower = (rotY + rotX + rx) / scale;
-        double BLPower = (rotY - rotX + rx) / scale;
-        double TLPower = (rotY - rotX - rx) / scale;
-        double BRPower = (rotY + rotX - rx) / scale;*/
-        //---------------------------------------------------------------------//
 
 
         //Robot-centric strafing
         //---------------------------------------------------------------------//
         double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx) + Math.abs(angleError), 1);
-        TRPower = ((y + x + rx) * chassisSpeedMultiplier - angleError) / denominator;
-        BLPower = ((y - x + rx) * chassisSpeedMultiplier - angleError) / denominator;
-        TLPower = ((y - x - rx) * chassisSpeedMultiplier + angleError) / denominator;
-        BRPower = ((y + x - rx) * chassisSpeedMultiplier + angleError) / denominator;
+        TRPower = ((y + x) * chassisSpeedMultiplier - angleError) / denominator;
+        BLPower = ((y - x) * chassisSpeedMultiplier - angleError) / denominator;
+        TLPower = ((y - x) * chassisSpeedMultiplier + angleError) / denominator;
+        BRPower = ((y + x) * chassisSpeedMultiplier + angleError) / denominator;
         //---------------------------------------------------------------------//
 
+
+        //Checks for driver speed shifts
         checkSpeedShifts();
 
+        //Setting motor chassis powers
         TL.setPower(TLPower);
         BL.setPower(BLPower);
         TR.setPower(TRPower);
@@ -153,6 +136,10 @@ public class TeleOpNew extends OpMode {
         arm();
         claw();
 
+        //Telemetry for debugging
+        telemetry.addData("robHead", imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
+        telemetry.addData("angleError", angleError);
+        telemetry.addData("TargetHead", robHead);
         telemetry.addData("TLPower", TLPower);
         telemetry.addData("TRPower", TRPower);
         telemetry.addData("BLPower", BLPower);
@@ -161,6 +148,7 @@ public class TeleOpNew extends OpMode {
         telemetry.addData("ARB2Position", ARB2.getCurrentPosition());
     }
 
+    //Checks if value given is less than minimum or greater than a max (floors/ceils number if outside a boundry)
     private void checkMinMaxValue(double min, double max, double value){
         if(value < min){
             value = min;
@@ -171,13 +159,15 @@ public class TeleOpNew extends OpMode {
         }
     }
 
-
+    //setsZeroPowerBehaviour on a list of motors given a set behaviour (ZeroPowerBehviour is what the motor will do when given
+    //0 power for a frame).
     private void setZeroPowerBehaviour(List<DcMotor> motors, DcMotor.ZeroPowerBehavior behavior){
         for(DcMotor motor : motors){
             motor.setZeroPowerBehavior(behavior);
         }
     }
 
+    //sets all motors in a list of motors to mode "Run To Position"
     private void setRunToPosition(List<DcMotor> motors, double normalizedPow){
         for(DcMotor motor : motors){
             motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -187,18 +177,21 @@ public class TeleOpNew extends OpMode {
         }
     }
 
+    //sets all motors in a list of motors to mode "Run Using Encoders"
     private void setRunUsingEncoders(List<DcMotor> motors){
         for(DcMotor motor : motors){
             motor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         }
     }
 
+    //Determines if the robot needs to rotate given error in the expected heading and actual heading.
     public double checkStrafeAndHead(double expectedX, double expectedY, double expectedHeading, double delTime){
         double angleErr = (expectedHeading - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
 
-        return angularPID.output(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle, expectedHeading, delTime) / 3.0;
+        return angularPID.output(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle, expectedHeading, delTime);
     }
 
+    //Determines if the driver activated in speed shifts
     public void checkSpeedShifts(){
         if(gamepad2.x){
             ARBSpeedMultiplier = 10;
@@ -224,10 +217,27 @@ public class TeleOpNew extends OpMode {
         }
     }
 
-    public double calculateDelTargetHead(double delRot){
-        return ((wheelRad / robRad) * (delRot * chassisSpeedMultiplier) * 0.6771) % 6.283185;
+    //Calculates robot target head in terms of radians
+    public void calculateTargetHead(double rx){
+        double sign = robHead / Math.abs(robHead);
+        robHead -=  calculateDelTargetHead(rx);
+
+        //IMU reads angular displacement in the domain of tangent. Therefore, we must
+        //change the orientation of the robot after crossing PI radians.
+        //Domain:
+        //Clockwise max: PI
+        //Counter-Clockwise max: -PI
+        if(Math.abs(robHead) > Math.PI){
+            robHead = Math.abs(robHead) % Math.PI - sign * Math.PI;
+        }
     }
 
+    //Calculates a change in targetHead
+    public double calculateDelTargetHead(double delRot){
+        return ((wheelRad / robRad) * (delRot * chassisSpeedMultiplier) * 0.6771); //% 6.283185;
+    }
+
+    //Stops arm from reaching a max/min height
     public void arm(){
         int ARB1TargetPos = ARB1.getCurrentPosition() + (int)Math.round(gamepad2.left_stick_y * ARBPosScale * ARBSpeedMultiplier);
         int ARB2TargetPos = ARB2.getCurrentPosition() + (int)Math.round(gamepad2.left_stick_y * ARBPosScale * ARBSpeedMultiplier);
@@ -237,15 +247,16 @@ public class TeleOpNew extends OpMode {
             ARB2TargetPos = 0;
         }
 
-        if(ARB2TargetPos < -6150){
-            ARB1TargetPos = -6150;
-            ARB2TargetPos = -6150;
+        if(ARB2TargetPos < -6200){
+            ARB1TargetPos = -6200;
+            ARB2TargetPos = -6200;
         }
 
         ARB1.setTargetPosition(ARB1TargetPos);
         ARB2.setTargetPosition(ARB2TargetPos);
     }
 
+    //Stops claw from reaching max/min opening
     public void claw(){
         if(gamepad2.right_bumper)
             clawPos += 30;

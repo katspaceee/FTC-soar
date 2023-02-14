@@ -18,9 +18,13 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
+import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 import org.firstinspires.ftc.teamcode.OpenCV.AprilTagDetectionPipeline;
+import org.firstinspires.ftc.teamcode.botsquadutil.PID;
 import org.firstinspires.ftc.teamcode.drive.SampleMecanumDrive;
 import org.firstinspires.ftc.teamcode.trajectorysequence.TrajectorySequenceBuilder;
 import org.openftc.apriltag.AprilTagDetection;
@@ -39,15 +43,25 @@ public class auto extends LinearOpMode {
     BNO055IMU imu;
     DcMotor TL, TR, BL, BR, ARB1, ARB2;
     List<DcMotor> driveMotors;
+    List<DcMotor> ARM;
     Servo claw;
     double proportional = 1.0;
     double robPosX = 0.0, robPosY = 0.0;
+    double lastTime = 0.0;
+
+    double ARBWheelRad = 0.0;
+    double ARBWheelCirc = 2.0 * Math.PI * ARBWheelRad;
+    int ARBTickPerRev = 28;
+
     ElapsedTime runTime = new ElapsedTime();
 
     OpenCvCamera camera;
     AprilTagDetectionPipeline aprilTagDetectionPipeline;
 
     static final double FEET_PER_METER = 3.28084;
+
+    private PID angularPID = new PID(0.36, 0.15, 0.05);
+    private PID linearPID = new PID(0.2, 0.0, 0.0);
 
     //New Configs for C270
     //Units are in pixels
@@ -94,9 +108,7 @@ public class auto extends LinearOpMode {
             drive.followTrajectory(path2);
             */
 
-            while(robPosX > -0.596){
-
-            }
+            goTo(-0.596, 0.0, 0.0, 0.15, 0.00899);
         }
 
         else if(tagOfInterest.id == id_Mid){
@@ -123,8 +135,18 @@ public class auto extends LinearOpMode {
         }
         //default path
         else {
-            //Do nothing, for now
+            if(gamepad1.right_bumper && gamepad1.left_bumper){
+                goTo(0.0, 0.584, 0.0, 0.15, 0.00899);
+            }
         }
+    }
+
+    //Units: inches
+    private void armGoTo(double height){
+        int ticks = (int)Math.round(height / ARBWheelCirc) * ARBTickPerRev;
+
+        ARB1.setTargetPosition(ticks);
+        ARB2.setTargetPosition(ticks);
     }
 
     private void initHardware(){
@@ -132,7 +154,9 @@ public class auto extends LinearOpMode {
         TR = hardwareMap.get(DcMotor.class, "TR");
         BL = hardwareMap.get(DcMotor.class, "BL");
         BR = hardwareMap.get(DcMotor.class, "BR");
+
         driveMotors = Arrays.asList(TL, TR, BL, BR);
+        ARM = Arrays.asList(ARB1, ARB2);
 
         ARB1 = hardwareMap.get(DcMotor.class, "ARB1");
         ARB2 = hardwareMap.get(DcMotor.class, "ARB2");
@@ -143,7 +167,10 @@ public class auto extends LinearOpMode {
         BR.setDirection(DcMotorSimple.Direction.FORWARD);
         TL.setDirection(DcMotorSimple.Direction.FORWARD);
         BL.setDirection(DcMotorSimple.Direction.REVERSE);
+        ARB1.setDirection(DcMotorSimple.Direction.REVERSE);
+        ARB2.setDirection(DcMotorSimple.Direction.FORWARD);
 
+        setRunToPosition(ARM, 0.25);
         setMode(driveMotors, DcMotor.RunMode.RUN_USING_ENCODER);
         setZeroPowerBehaviour(driveMotors, DcMotor.ZeroPowerBehavior.BRAKE);
 
@@ -258,35 +285,82 @@ public class auto extends LinearOpMode {
     }
 
     //Robot-centric
-    public void goTo(double x, double y, double heading, double motorScalingFactor){
-        double cx = x * 1.1;
+    //Use meters
+    public void goTo(double x, double y, double heading, double motorScalingFactor, double minErr){
+        double errX = x - imu.getPosition().x;
+        double errY = y - imu.getPosition().y;
 
-        double angleErr = checkStrafeAndHead(x, y, heading);
-        double scale = Math.max(Math.abs(cx) + Math.abs(y) + Math.abs(angleErr), 1);
-        TRPower = y + cx / scale;
-        BLPower = y - cx / scale;
-        TLPower = y - cx / scale;
-        BRPower = y + cx / scale;
+        while(Math.abs(errX) > minErr && Math.abs(errY) > minErr) {
+            double deltaTime = getDelTime();
 
-        TR.setPower(TRPower * motorScalingFactor);
-        BL.setPower(BLPower * motorScalingFactor);
-        TL.setPower(TLPower * motorScalingFactor);
-        BR.setPower(BRPower * motorScalingFactor);
+            PID.tunedOut tndOut = checkStrafeAndHead(x, y, heading, deltaTime);
+
+            double tunedAngle = tndOut.angle;
+            double tunedX = tndOut.x;
+            double tunedY = tndOut.y;
+
+            double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(tunedAngle) + Math.abs(tunedY) + Math.abs(tunedX), 1);
+            double leftPow = ((y + tunedY) - (x + tunedX)) * motorScalingFactor;
+            double rightPow = ((y + tunedY) + (x + tunedX)) * motorScalingFactor;
+
+            TRPower = (rightPow - tunedAngle) / denominator;
+            BLPower = (leftPow - tunedAngle) / denominator;
+            TLPower = (leftPow + tunedAngle) / denominator;
+            BRPower = (rightPow + tunedAngle) / denominator;
+
+            TR.setPower(TRPower);
+            BL.setPower(BLPower);
+            TL.setPower(TLPower);
+            BR.setPower(BRPower);
+
+            errX = x - imu.getPosition().x;
+            errY = y - imu.getPosition().y;
+        }
     }
 
+    public void rotTo(double angle, double motorScalingValue, double minErr){
+        double angleErr = (angle - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
 
-    public double checkStrafeAndHead(double expectedX, double expectedY, double expectedHeading){
-        double angleErr = (expectedHeading - imu.getAngularOrientation().firstAngle) / 6.2831;
+        while(Math.abs(angleErr) > minErr){
+            double deltaTime = getDelTime();
 
-        TRPower += proportional * angleErr;
-        BRPower += proportional * angleErr;
-        TLPower -= proportional * angleErr;
-        BLPower -= proportional * angleErr;
+            PID.tunedOut tndOut = checkStrafeAndHead(0.0, 0.0, angle, deltaTime);
 
-        return angleErr;
+            double tunedAngle = tndOut.angle;
+
+            TR.setPower(-tunedAngle);
+            BL.setPower(-tunedAngle);
+            TL.setPower(tunedAngle);
+            TR.setPower(tunedAngle);
+
+            angleErr = (angle - imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle);
+        }
     }
 
-    public void updateRobPos(double deltaTime){
+    public double getDelTime(){
+        double currentTime = runTime.time();
+        lastTime = currentTime;
 
+        return currentTime - lastTime;
+    }
+
+    public PID.tunedOut checkStrafeAndHead(double expectedX, double expectedY, double expectedHeading, double delTime){
+        double tunedX = linearPID.output(imu.getPosition().x, expectedX, delTime);
+        double tunedY = linearPID.output(imu.getPosition().y, expectedY, delTime);
+        double tunedAngle = angularPID.output(imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.RADIANS).firstAngle, expectedHeading, delTime);
+
+        PID.tunedOut output = new PID.tunedOut(tunedX, tunedY, tunedAngle);
+
+        return output;
+    }
+
+    //sets all motors in a list of motors to mode "Run To Position"
+    private void setRunToPosition(List<DcMotor> motors, double normalizedPow){
+        for(DcMotor motor : motors){
+            motor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            motor.setTargetPosition(0);
+            motor.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            motor.setPower(normalizedPow);
+        }
     }
 }
