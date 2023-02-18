@@ -1,0 +1,135 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    xmlns:tools="http://schemas.android.com/tools"
+4    package="com.qualcomm.ftcrobotcontroller"
+5    android:versionCode="47"
+6    android:versionName="8.0" >
+7
+8    <uses-sdk
+9        android:minSdkVersion="23"
+9-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml
+10        android:targetSdkVersion="28" />
+10-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml
+11
+12    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+12-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:7:3-79
+12-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:7:20-76
+13
+14    <application
+14-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:9:3-77:17
+15        android:allowBackup="true"
+15-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:10:5-31
+16        android:icon="@drawable/ic_launcher"
+16-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:12:5-41
+17        android:label="@string/app_name"
+17-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:13:5-37
+18        android:largeHeap="true"
+18-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:11:5-29
+19        android:theme="@style/AppThemeRedRC"
+19-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:14:5-41
+20        android:usesCleartextTraffic="true" >
+20-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:15:5-40
+21
+22        <!-- Indicates to the ControlHubUpdater what the latest version of the Control Hub is that this app supports -->
+23        <meta-data
+23-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:18:5-20:29
+24            android:name="org.firstinspires.latestSupportedControlHubVersion"
+24-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:19:9-74
+25            android:value="1" />
+25-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:20:9-26
+26
+27        <!-- The main robot controller activity -->
+28        <activity
+28-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:23:5-34:16
+29            android:name="org.firstinspires.ftc.robotcontroller.internal.PermissionValidatorWrapper"
+29-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:23:15-103
+30            android:configChanges="orientation|screenSize"
+30-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:25:15-61
+31            android:label="@string/app_name"
+31-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:26:15-47
+32            android:launchMode="singleTask"
+32-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:27:15-46
+33            android:screenOrientation="fullUser" >
+33-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:24:15-51
+34            <intent-filter>
+34-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:29:7-32:23
+35                <category android:name="android.intent.category.LAUNCHER" />
+35-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:30:9-69
+35-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:30:19-66
+36
+37                <action android:name="android.intent.action.MAIN" />
+37-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:31:9-61
+37-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:31:17-58
+38            </intent-filter>
+39        </activity>
+40        <activity
+40-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:36:5-55:16
+41            android:name="org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity"
+41-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:37:7-95
+42            android:configChanges="orientation|screenSize"
+42-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:39:7-53
+43            android:label="@string/app_name"
+43-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:40:7-39
+44            android:launchMode="singleTask"
+44-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:41:7-38
+45            android:screenOrientation="fullUser" >
+45-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:38:7-43
+46            <intent-filter>
+46-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:43:7-45:23
+47                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+47-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:44:9-82
+47-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:44:17-79
+48            </intent-filter>
+49
+50            <meta-data
+50-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:47:7-49:49
+51                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+51-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:48:9-71
+52                android:resource="@xml/device_filter" />
+52-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:49:9-46
+53
+54            <!-- org.firstinspires.main.entry indicates that this app is compatible with the Dragonboard Control Hub -->
+55            <meta-data
+55-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:52:7-54:34
+56                android:name="org.firstinspires.main.entry"
+56-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:53:11-54
+57                android:value="true" />
+57-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:54:11-31
+58        </activity>
+59
+60        <!-- The robot controller service in which most of the robot functionality is managed -->
+61        <service
+61-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:58:5-60:32
+62            android:name="com.qualcomm.ftccommon.FtcRobotControllerService"
+62-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:59:7-70
+63            android:enabled="true" />
+63-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:60:7-29
+64
+65        <!-- Assistant that autostarts the robot controller on android boot (if it's supposed to) -->
+66        <receiver
+66-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:64:5-75:16
+67            android:name="org.firstinspires.ftc.ftccommon.internal.RunOnBoot"
+67-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:67:7-72
+68            android:enabled="true"
+68-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:65:7-29
+69            android:exported="true"
+69-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:66:7-30
+70            android:permission="android.permission.RECEIVE_BOOT_COMPLETED" >
+70-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:68:7-69
+71            <intent-filter>
+71-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:70:7-74:23
+72                <category android:name="android.intent.category.DEFAULT" />
+72-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:71:9-68
+72-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:71:19-65
+73
+74                <action android:name="android.intent.action.BOOT_COMPLETED" />
+74-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:72:9-71
+74-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:72:17-68
+75                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+75-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:73:9-74
+75-->C:\Robotics\FtcRobotController-master\FtcRobotController\src\main\AndroidManifest.xml:73:17-71
+76            </intent-filter>
+77        </receiver>
+78    </application>
+79
+80</manifest>
